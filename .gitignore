@@ -1,0 +1,29 @@
+# Python environment
+.venv/
+__pycache__/
+*.py[cod]
+
+# Raw and processed datasets
+data/raw/
+data/processed/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+
+# Personal BMAD configuration
+_bmad/config.user.toml
+_bmad/custom/config.user.toml
+
+# Private working notes
+.memlog.md
+
+# Private working notes
+.memlog.md
