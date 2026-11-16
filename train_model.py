@@ -135,7 +135,7 @@ comparison_models = {
         class_weight="balanced",
         random_state=42
     ),
-    
+
         "Extra Trees": ExtraTreesClassifier(
         n_estimators=300,
         class_weight="balanced",
@@ -345,3 +345,95 @@ for name, comparison_model in models.items():
     ))
     print("Confusion matrix:")
     print(confusion_matrix(y_test, predictions))
+
+
+# ==========================================
+# FINAL MODEL: GRADIENT BOOSTING
+# ==========================================
+
+import joblib
+from sklearn.model_selection import StratifiedGroupKFold
+
+print("\nFINAL GRADIENT BOOSTING MODEL")
+print("-----------------------------")
+
+final_model = GradientBoostingClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+final_cv = StratifiedGroupKFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+
+final_oof_probabilities = np.full(len(X_train), np.nan)
+
+for fit_idx, val_idx in final_cv.split(
+    X_train, y_train, groups.iloc[train_idx]
+):
+    fold_model = clone(final_model)
+
+    weights = compute_sample_weight(
+        "balanced", y_train.iloc[fit_idx]
+    )
+
+    fold_model.fit(
+        X_train.iloc[fit_idx],
+        y_train.iloc[fit_idx],
+        sample_weight=weights
+    )
+
+    final_oof_probabilities[val_idx] = (
+        fold_model.predict_proba(X_train.iloc[val_idx])[:, 1]
+    )
+
+best_final_threshold = 0.50
+best_final_score = 0
+
+for threshold in thresholds:
+    predictions = (
+        final_oof_probabilities >= threshold
+    ).astype(int)
+
+    score = balanced_accuracy_score(y_train, predictions)
+
+    if score > best_final_score:
+        best_final_score = score
+        best_final_threshold = threshold
+
+final_weights = compute_sample_weight("balanced", y_train)
+
+final_model.fit(
+    X_train,
+    y_train,
+    sample_weight=final_weights
+)
+
+final_test_probabilities = final_model.predict_proba(X_test)[:, 1]
+
+final_test_predictions = (
+    final_test_probabilities >= best_final_threshold
+).astype(int)
+
+final_test_score = balanced_accuracy_score(
+    y_test, final_test_predictions
+)
+
+print("Selected threshold:", round(best_final_threshold, 2))
+print("CV balanced accuracy:", round(best_final_score, 4))
+print("Held-out balanced accuracy:", round(final_test_score, 4))
+
+model_bundle = {
+    "model": final_model,
+    "threshold": best_final_threshold,
+    "features": feature_columns,
+    "sampling_frequency": 30,
+    "recording_duration_seconds": 10,
+    "model_name": "Gradient Boosting"
+}
+
+joblib.dump(model_bundle, "ppg_quality_model.joblib")
+
+print("\nSaved model to ppg_quality_model.joblib")

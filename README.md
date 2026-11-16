@@ -95,7 +95,9 @@ pip install pandas numpy scipy scikit-learn matplotlib wfdb
 ## Running the Project
 
 1. Download the BUT PPG Database from PhysioNet.
-2. Extract the database into the expected `data/raw/` directory.
+2. Extract the database so that `quality-hr-ann.csv` is located at:
+
+   `data/raw/brno-university-of-technology-smartphone-ppg-database-but-ppg-2.0.0/quality-hr-ann.csv`
 3. Run the scripts in order:
 
 ```bash
